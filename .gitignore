@@ -13,5 +13,5 @@ venv/
 ENV/
 env/
 
-# Streamlit local state
-.streamlit/
+# Streamlit local state — allow config.toml for cloud deployment
+.streamlit/secrets.toml

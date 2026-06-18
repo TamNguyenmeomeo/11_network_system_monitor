@@ -61,6 +61,16 @@ def init_db(db_name):
             is_online INTEGER
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS alert_history (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp   DATETIME DEFAULT CURRENT_TIMESTAMP,
+            alert_type  TEXT NOT NULL,
+            metric_value REAL,
+            threshold   REAL,
+            message     TEXT
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -97,6 +107,20 @@ def log_host_status(db_name, name, ip, is_online):
     conn.commit()
     conn.close()
 
+
+def log_alert(db_name: str, alert_type: str, metric_value: float, threshold: float, message: str):
+    """Persist an alert event to the alert_history table."""
+    try:
+        conn = sqlite3.connect(db_name)
+        conn.execute(
+            "INSERT INTO alert_history (alert_type, metric_value, threshold, message) VALUES (?, ?, ?, ?)",
+            (alert_type, metric_value, threshold, message)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[alert_history] Failed to log alert: {e}")
+
 # Notification Dispatcher
 def send_alert(config, message):
     print(f"\n⚠️  [ALERT TRIGGERED]: {message}")
@@ -128,21 +152,29 @@ def run_checks(config, simulate_spikes=False):
     
     # Check system thresholds
     if cpu > config["cpu_alert_threshold"]:
-        send_alert(config, f"High CPU usage detected: {cpu}% (Threshold: {config['cpu_alert_threshold']}%)")
+        msg = f"High CPU usage detected: {cpu}% (Threshold: {config['cpu_alert_threshold']}%)"
+        send_alert(config, msg)
+        log_alert(config["db_name"], "CPU", cpu, config["cpu_alert_threshold"], msg)
     if ram > config["ram_alert_threshold"]:
-        send_alert(config, f"High RAM usage detected: {ram}% (Threshold: {config['ram_alert_threshold']}%)")
+        msg = f"High RAM usage detected: {ram}% (Threshold: {config['ram_alert_threshold']}%)"
+        send_alert(config, msg)
+        log_alert(config["db_name"], "RAM", ram, config["ram_alert_threshold"], msg)
     if disk > config["disk_alert_threshold"]:
-        send_alert(config, f"High Disk usage detected: {disk}% (Threshold: {config['disk_alert_threshold']}%)")
-        
+        msg = f"High Disk usage detected: {disk}% (Threshold: {config['disk_alert_threshold']}%)"
+        send_alert(config, msg)
+        log_alert(config["db_name"], "DISK", disk, config["disk_alert_threshold"], msg)
+
     # Check Hosts ping status
     for host in config["hosts_to_ping"]:
         is_online = ping_host(host["ip"])
         status_str = "ONLINE" if is_online else "OFFLINE"
         print(f" -> Host {host['name']} ({host['ip']}): {status_str}")
         log_host_status(config["db_name"], host["name"], host["ip"], is_online)
-        
+
         if not is_online:
-            send_alert(config, f"Host {host['name']} ({host['ip']}) is OFFLINE!")
+            msg = f"Host {host['name']} ({host['ip']}) is OFFLINE!"
+            send_alert(config, msg)
+            log_alert(config["db_name"], "HOST_DOWN", 0.0, 1.0, msg)
 
 # Configuration Lock for thread safety
 config_lock = threading.Lock()

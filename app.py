@@ -4,7 +4,8 @@ import json
 import sqlite3
 import pandas as pd
 import streamlit as st
-import altair as alt
+import plotly.express as px
+import plotly.graph_objects as go
 import subprocess
 
 # Config file path relative to this script
@@ -165,6 +166,36 @@ def get_latest_host_status(db_name):
     except Exception:
         return pd.DataFrame()
 
+def make_gauge(value: float, title: str, threshold: float) -> go.Figure:
+    """Return a Plotly Indicator gauge for CPU/RAM/Disk."""
+    color = "#51cf66" if value < threshold * 0.75 else ("#ffd43b" if value < threshold else "#ff6b6b")
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=value,
+        number={"suffix": "%", "font": {"size": 28, "color": "white"}},
+        title={"text": title, "font": {"size": 14, "color": "rgba(255,255,255,0.7)"}},
+        gauge={
+            "axis": {"range": [0, 100], "tickcolor": "rgba(255,255,255,0.3)"},
+            "bar": {"color": color},
+            "bgcolor": "rgba(255,255,255,0.05)",
+            "borderwidth": 0,
+            "steps": [
+                {"range": [0, threshold * 0.75], "color": "rgba(81,207,102,0.08)"},
+                {"range": [threshold * 0.75, threshold], "color": "rgba(255,212,59,0.1)"},
+                {"range": [threshold, 100], "color": "rgba(255,107,107,0.15)"},
+            ],
+            "threshold": {"line": {"color": "#ff6b6b", "width": 2}, "value": threshold},
+        },
+    ))
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(t=60, b=20, l=20, r=20),
+        height=220,
+    )
+    return fig
+
+
 def main():
     st.set_page_config(page_title="Network & System Monitor", page_icon="📡", layout="wide")
     
@@ -313,81 +344,56 @@ def main():
                 st.success(t["save_success"])
         return
 
-    # 4. Live Metrics Panel
+    # 4. Live Metrics Panel — Plotly Gauge Charts
     st.header(t["metrics_section"])
     latest = df_metrics.iloc[-1]
-    
+
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown(f"""
-        <div class="glass-card" title="{t['cpu_help']}">
-            <h4 style='margin:0; opacity:0.8;'>{t["cpu_usage"]} ℹ️</h4>
-            <h1 style='margin:10px 0;'>{latest["cpu_usage"]:.1f}%</h1>
-            <p style='margin:0; font-size:0.9em; opacity:0.6;'>Limit: {config["cpu_alert_threshold"]}%</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.plotly_chart(
+            make_gauge(latest["cpu_usage"], t["cpu_usage"], config["cpu_alert_threshold"]),
+            use_container_width=True)
     with col2:
-        st.markdown(f"""
-        <div class="glass-card" title="{t['ram_help']}">
-            <h4 style='margin:0; opacity:0.8;'>{t["ram_usage"]} ℹ️</h4>
-            <h1 style='margin:10px 0;'>{latest["ram_usage"]:.1f}%</h1>
-            <p style='margin:0; font-size:0.9em; opacity:0.6;'>Limit: {config["ram_alert_threshold"]}%</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.plotly_chart(
+            make_gauge(latest["ram_usage"], t["ram_usage"], config["ram_alert_threshold"]),
+            use_container_width=True)
     with col3:
-        st.markdown(f"""
-        <div class="glass-card" title="{t['disk_help']}">
-            <h4 style='margin:0; opacity:0.8;'>{t["disk_usage"]} ℹ️</h4>
-            <h1 style='margin:10px 0;'>{latest["disk_usage"]:.1f}%</h1>
-            <p style='margin:0; font-size:0.9em; opacity:0.6;'>Limit: {config["disk_alert_threshold"]}%</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.plotly_chart(
+            make_gauge(latest["disk_usage"], t["disk_usage"], config["disk_alert_threshold"]),
+            use_container_width=True)
 
-    # 5. Resource Utilization History Chart
+    # 5. Resource Utilization History — Interactive Plotly Line Chart
     st.subheader(t["history_section"])
     if not df_metrics.empty:
         chart_data = df_metrics.copy()
-        chart_data['Time'] = pd.to_datetime(chart_data['timestamp'])
-        
-        # Rename columns for prettier legend
-        chart_data = chart_data.rename(columns={
+        chart_data["Time"] = pd.to_datetime(chart_data["timestamp"])
+        df_melted = chart_data.melt(
+            id_vars=["Time"],
+            value_vars=["cpu_usage", "ram_usage", "disk_usage"],
+            var_name="Metric", value_name="Usage (%)"
+        )
+        df_melted["Metric"] = df_melted["Metric"].map({
             "cpu_usage": "CPU (%)",
             "ram_usage": "RAM (%)",
             "disk_usage": "Disk (%)"
         })
-        
-        # Melt to long format for Altair
-        df_melted = chart_data.melt(
-            id_vars=['Time'], 
-            value_vars=['CPU (%)', 'RAM (%)', 'Disk (%)'], 
-            var_name='Metric', 
-            value_name='Usage (%)'
+        color_map = {"CPU (%)": "#4facfe", "RAM (%)": "#a78bfa", "Disk (%)": "#fbbf24"}
+        fig = px.line(
+            df_melted, x="Time", y="Usage (%)", color="Metric",
+            color_discrete_map=color_map,
+            title="Resource Usage History (hover for exact values)",
+            template="plotly_dark",
+            labels={"Usage (%)": "Usage (%)", "Time": ""},
         )
-        
-        # Build premium Altair chart (without calling .interactive() to prevent dragging/zooming)
-        chart = alt.Chart(df_melted).mark_line(
-            strokeWidth=2,
-            interpolate='monotone'
-        ).encode(
-            x=alt.X('Time:T', title=None, axis=alt.Axis(
-                format='%H:%M:%S',
-                labelOverlap='greedy',
-                grid=True
-            )),
-            y=alt.Y('Usage (%):Q', title='Usage (%)', scale=alt.Scale(domain=[0, 100])),
-            color=alt.Color('Metric:N', scale=alt.Scale(
-                domain=['CPU (%)', 'RAM (%)', 'Disk (%)'],
-                range=['#3b82f6', '#8b5cf6', '#f59e0b']
-            ), legend=alt.Legend(
-                orient='bottom',
-                title=None,
-                labelFontSize=12
-            ))
-        ).properties(
-            height=300
+        fig.update_traces(line=dict(width=2))
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(255,255,255,0.03)",
+            yaxis=dict(range=[0, 100]),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            height=320,
         )
-        
-        st.altair_chart(chart, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No metrics history to display.")
 
@@ -411,7 +417,40 @@ def main():
     else:
         st.info("No hosts logged yet. Pinger loop might be initializing.")
 
-    # 7. Sidebar Configurations Forms (Collapsible via Expanders)
+    # 7. Alert History Tab (inside main after host pinger)
+    st.markdown("---")
+    st.header("📢 Alert History")
+    try:
+        conn_ah = sqlite3.connect(db_name)
+        df_alerts = pd.read_sql_query(
+            "SELECT timestamp, alert_type, metric_value, threshold, message "
+            "FROM alert_history ORDER BY timestamp DESC LIMIT 100",
+            conn_ah)
+        conn_ah.close()
+        if df_alerts.empty:
+            st.info("No alerts have been triggered yet. Thresholds have not been exceeded.")
+        else:
+            # Summary metrics
+            ca, cb, cc = st.columns(3)
+            ca.metric("Total Alerts", len(df_alerts))
+            cb.metric("Most Common", df_alerts["alert_type"].mode()[0] if not df_alerts.empty else "—")
+            cc.metric("Latest Alert", df_alerts["timestamp"].iloc[0][:16] if not df_alerts.empty else "—")
+            # Timeline bar
+            df_alerts["timestamp"] = pd.to_datetime(df_alerts["timestamp"])
+            fig_al = px.scatter(
+                df_alerts, x="timestamp", y="alert_type", color="alert_type",
+                size="metric_value", hover_data=["metric_value", "threshold", "message"],
+                title="Alert Timeline", template="plotly_dark",
+                color_discrete_sequence=px.colors.qualitative.Bold,
+            )
+            fig_al.update_layout(paper_bgcolor="rgba(0,0,0,0)",
+                                 plot_bgcolor="rgba(255,255,255,0.03)", height=280)
+            st.plotly_chart(fig_al, use_container_width=True)
+            st.dataframe(df_alerts, use_container_width=True, height=250)
+    except Exception:
+        st.info("Alert history table not yet created. Run monitor.py to start collecting data.")
+
+    # 8. Sidebar Configurations Forms (Collapsible via Expanders)
     st.sidebar.markdown("---")
     
     with st.sidebar.expander(t["settings_section"]):

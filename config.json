@@ -1,0 +1,32 @@
+{
+    "db_name": "monitor_logs.db",
+    "check_interval_seconds": 10,
+    "cpu_alert_threshold": 90.0,
+    "ram_alert_threshold": 90.0,
+    "disk_alert_threshold": 90.0,
+    "webhook_url": "",
+    "telegram_bot_token": "",
+    "telegram_chat_id": "",
+    "hosts_to_ping": [
+        {
+            "name": "Local Loopback",
+            "ip": "127.0.0.1"
+        },
+        {
+            "name": "Google DNS",
+            "ip": "8.8.8.8"
+        },
+        {
+            "name": "Cloudflare DNS",
+            "ip": "1.1.1.1"
+        },
+        {
+            "name": "Local Gateway",
+            "ip": "192.168.1.1"
+        },
+        {
+            "name": "Local Gateway",
+            "ip": "192.168.1.1"
+        }
+    ]
+}

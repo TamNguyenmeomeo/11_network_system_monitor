@@ -211,107 +211,46 @@ def main():
     lang = "EN" if lang_opt == "English" else "VI"
     t = UI_LANG[lang]
 
-    # Theme Selector — persisted via session_state so language change doesn't reset it
-    if "theme" not in st.session_state:
-        st.session_state["theme"] = "Dark"  # default: dark
-    theme_options = [t["dark"], t["light"]]
-    theme_index = 0 if st.session_state["theme"] == "Dark" else 1
-    theme_opt = st.sidebar.selectbox(t["theme_select"], theme_options, index=theme_index)
-    st.session_state["theme"] = "Dark" if theme_opt == t["dark"] else "Light"
-    theme = st.session_state["theme"]
-
-    # Inject dynamic CSS stylesheet
-    if theme == "Dark":
-        css = """
-        <style>
-        .stApp, .stApp > header, section.main, section.main > div, .block-container {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
-            color: #f8fafc !important;
-        }
-        section[data-testid="stSidebar"],
-        section[data-testid="stSidebar"] > div:first-child,
-        [data-testid="stSidebarContent"] {
-            background-color: rgba(15, 23, 42, 0.98) !important;
-            border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
-        }
-        section[data-testid="stSidebar"] * { color: #cbd5e1; }
-        .glass-card {
-            background: rgba(30, 41, 59, 0.7) !important;
-            border-radius: 16px !important;
-            padding: 20px !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
-            margin-bottom: 20px !important;
-        }
-        .online-badge {
-            background-color: rgba(34, 197, 94, 0.2) !important;
-            color: #4ade80 !important;
-            border: 1px solid rgba(34, 197, 94, 0.4) !important;
-            border-radius: 6px !important;
-            padding: 4px 10px !important;
-            font-weight: bold !important;
-            display: inline-block !important;
-        }
-        .offline-badge {
-            background-color: rgba(239, 68, 68, 0.2) !important;
-            color: #f87171 !important;
-            border: 1px solid rgba(239, 68, 68, 0.4) !important;
-            border-radius: 6px !important;
-            padding: 4px 10px !important;
-            font-weight: bold !important;
-            display: inline-block !important;
-        }
-        h1, h2, h3 {
-            color: #ffffff !important;
-        }
-        </style>
-        """
-    else:
-        css = """
-        <style>
-        .stApp, .stApp > header, section.main, section.main > div, .block-container {
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%) !important;
-            color: #1e293b !important;
-        }
-        section[data-testid="stSidebar"],
-        section[data-testid="stSidebar"] > div:first-child,
-        [data-testid="stSidebarContent"] {
-            background-color: rgba(241, 245, 249, 0.98) !important;
-            border-right: 1px solid rgba(0, 0, 0, 0.05) !important;
-        }
-        section[data-testid="stSidebar"] * { color: #334155; }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.7) !important;
-            border-radius: 16px !important;
-            padding: 20px !important;
-            border: 1px solid rgba(0, 0, 0, 0.06) !important;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05) !important;
-            margin-bottom: 20px !important;
-        }
-        .online-badge {
-            background-color: rgba(34, 197, 94, 0.1) !important;
-            color: #15803d !important;
-            border: 1px solid rgba(34, 197, 94, 0.3) !important;
-            border-radius: 6px !important;
-            padding: 4px 10px !important;
-            font-weight: bold !important;
-            display: inline-block !important;
-        }
-        .offline-badge {
-            background-color: rgba(239, 68, 68, 0.1) !important;
-            color: #b91c1c !important;
-            border: 1px solid rgba(239, 68, 68, 0.3) !important;
-            border-radius: 6px !important;
-            padding: 4px 10px !important;
-            font-weight: bold !important;
-            display: inline-block !important;
-        }
-        h1, h2, h3 {
-            color: #0f172a !important;
-        }
-        </style>
-        """
-    st.markdown(css, unsafe_allow_html=True)
+    # ── Hardcoded Dark Theme CSS ──
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+    /* Main background */
+    .stApp, .stApp > header, section.main, section.main > div, .block-container {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+        color: #f8fafc !important;
+    }
+    /* Sidebar */
+    section[data-testid="stSidebar"],
+    section[data-testid="stSidebar"] > div:first-child,
+    [data-testid="stSidebarContent"] {
+        background: linear-gradient(180deg, #0f172a 0%, #020617 100%) !important;
+        border-right: 1px solid rgba(255,255,255,0.05) !important;
+    }
+    section[data-testid="stSidebar"] * { color: #cbd5e1 !important; }
+    /* Glass cards */
+    .glass-card {
+        background: rgba(30, 41, 59, 0.7) !important;
+        border-radius: 16px !important; padding: 20px !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        box-shadow: 0 8px 32px 0 rgba(0,0,0,0.3) !important;
+        margin-bottom: 20px !important;
+    }
+    /* Status badges */
+    .online-badge {
+        background-color: rgba(34,197,94,0.2) !important; color: #4ade80 !important;
+        border: 1px solid rgba(34,197,94,0.4) !important; border-radius: 6px !important;
+        padding: 4px 10px !important; font-weight: bold !important; display: inline-block !important;
+    }
+    .offline-badge {
+        background-color: rgba(239,68,68,0.2) !important; color: #f87171 !important;
+        border: 1px solid rgba(239,68,68,0.4) !important; border-radius: 6px !important;
+        padding: 4px 10px !important; font-weight: bold !important; display: inline-block !important;
+    }
+    h1, h2, h3 { color: #ffffff !important; }
+    </style>
+    """, unsafe_allow_html=True)
 
     # 2. Main Title Layout
     st.title(t["title"])

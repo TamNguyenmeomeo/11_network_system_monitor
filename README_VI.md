@@ -12,11 +12,11 @@
 
 ### Giao diện Tối (Dark Mode)
 Giao diện tối được thiết kế với nền gradient hiện đại cùng các thẻ kính mờ (glassmorphism) và nhãn cảnh báo trạng thái trực quan:
-![Dark Mode Preview](assets/dark_mode.png)
+![Dark Mode Preview](assets/network_monitor_dark.png)
 
 ### Giao diện Sáng (Light Mode)
 Giao diện sáng sử dụng độ tương phản cao, nền dịu mắt giúp việc kiểm tra và theo dõi hệ thống ban ngày dễ dàng hơn:
-![Light Mode Preview](assets/light_mode.png)
+![Light Mode Preview](assets/network_monitor_light.png)
 
 ---
 

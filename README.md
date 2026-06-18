@@ -12,11 +12,11 @@ An advanced, offline-first Network and System resource monitoring application bu
 
 ### Dark Mode (Giao diện Tối)
 The dark theme uses a modern gradient background with glassmorphism cards and bright badges:
-![Dark Mode Preview](assets/dark_mode.png)
+![Dark Mode Preview](assets/network_monitor_dark.png)
 
 ### Light Mode (Giao diện Sáng)
 The light theme uses a clean, high-contrast slate gradient for optimal daylight monitoring:
-![Light Mode Preview](assets/light_mode.png)
+![Light Mode Preview](assets/network_monitor_light.png)
 
 ---
 

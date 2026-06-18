@@ -2,7 +2,7 @@
 
 [![Python CI](https://github.com/TamNguyenmeomeo/11_network_system_monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/TamNguyenmeomeo/11_network_system_monitor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://streamlit.io)
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://tam-it-assistant.streamlit.app)
 
 An advanced, offline-first Network and System resource monitoring application built with **Streamlit**, **SQLite**, and **psutil**. It logs historical CPU, RAM, and Disk metrics along with host connection (ping) logs to a local database, and dispatches automated alerts to Discord or Telegram when thresholds are breached or hosts go offline.
 

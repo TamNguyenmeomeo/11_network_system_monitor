@@ -211,25 +211,30 @@ def main():
     lang = "EN" if lang_opt == "English" else "VI"
     t = UI_LANG[lang]
 
-    # Theme Selector
-    theme_opt = st.sidebar.selectbox(t["theme_select"], [t["light"], t["dark"]])
-    theme = "Light" if theme_opt == t["light"] else "Dark"
+    # Theme Selector — persisted via session_state so language change doesn't reset it
+    if "theme" not in st.session_state:
+        st.session_state["theme"] = "Dark"  # default: dark
+    theme_options = [t["dark"], t["light"]]
+    theme_index = 0 if st.session_state["theme"] == "Dark" else 1
+    theme_opt = st.sidebar.selectbox(t["theme_select"], theme_options, index=theme_index)
+    st.session_state["theme"] = "Dark" if theme_opt == t["dark"] else "Light"
+    theme = st.session_state["theme"]
 
     # Inject dynamic CSS stylesheet
     if theme == "Dark":
         css = """
         <style>
-        .stApp {
+        .stApp, .stApp > header, section.main, section.main > div, .block-container {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
             color: #f8fafc !important;
         }
-        section[data-testid="stSidebar"] {
-            background-color: rgba(15, 23, 42, 0.95) !important;
+        section[data-testid="stSidebar"],
+        section[data-testid="stSidebar"] > div:first-child,
+        [data-testid="stSidebarContent"] {
+            background-color: rgba(15, 23, 42, 0.98) !important;
             border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
         }
-        section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] p {
-            color: #cbd5e1 !important;
-        }
+        section[data-testid="stSidebar"] * { color: #cbd5e1; }
         .glass-card {
             background: rgba(30, 41, 59, 0.7) !important;
             border-radius: 16px !important;
@@ -264,17 +269,17 @@ def main():
     else:
         css = """
         <style>
-        .stApp {
+        .stApp, .stApp > header, section.main, section.main > div, .block-container {
             background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%) !important;
             color: #1e293b !important;
         }
-        section[data-testid="stSidebar"] {
-            background-color: rgba(241, 245, 249, 0.95) !important;
+        section[data-testid="stSidebar"],
+        section[data-testid="stSidebar"] > div:first-child,
+        [data-testid="stSidebarContent"] {
+            background-color: rgba(241, 245, 249, 0.98) !important;
             border-right: 1px solid rgba(0, 0, 0, 0.05) !important;
         }
-        section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] p {
-            color: #334155 !important;
-        }
+        section[data-testid="stSidebar"] * { color: #334155; }
         .glass-card {
             background: rgba(255, 255, 255, 0.7) !important;
             border-radius: 16px !important;
